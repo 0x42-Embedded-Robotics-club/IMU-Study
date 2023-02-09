@@ -133,10 +133,12 @@ void MPU9250::readGyroData(int16_t * destination)
 
 void MPU9250::readMagData(int16_t * destination)
 {
+    writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x01);
+
     uint8_t rawData[7];  // x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
     if(readByte(AK8963_ADDRESS, AK8963_ST1) & 0x01) 
     { // wait for magnetometer data ready bit to be set
-        readBytes(AK8963_ADDRESS, AK8963_XOUT_L, 7, &rawData[0]);  // Read the six raw data and ST2 registers sequentially into data array
+        readBytes(AK8963_ADDRESS, AK8963_XOUT_L, 7, rawData);  // Read the six raw data and ST2 registers sequentially into data array
         uint8_t c = rawData[6]; // End data read by reading ST2 register
         if(!(c & 0x08))
         { // Check if magnetic sensor overflow set, if not then report data
@@ -165,11 +167,11 @@ void MPU9250::resetMPU9250()
 void MPU9250::initAK8963(float* destination)
 {
     // First extract the factory calibration for each magnetometer axis
-    uint8_t rawData[3];  // x/y/z gyro calibration data stored here
-    writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00); // Power down magnetometer  
+    writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00);
     wait_us(10000);
     writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x0F); // Enter Fuse ROM access mode
     wait_us(10000);
+    uint8_t rawData[3];  // x/y/z gyro calibration data stored here
     readBytes(AK8963_ADDRESS, AK8963_ASAX, 3, &rawData[0]);  // Read the x-, y-, and z-axis calibration values
     destination[0] =  (float)(rawData[0] - 128)/256.0f + 1.0f;   // Return x-axis sensitivity adjustment values, etc.
     destination[1] =  (float)(rawData[1] - 128)/256.0f + 1.0f;  
@@ -180,6 +182,8 @@ void MPU9250::initAK8963(float* destination)
     // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
     // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
     writeByte(AK8963_ADDRESS, AK8963_CNTL, mScale << 4 | mMode); // Set magnetometer data resolution and sample ODR
+    wait_us(10000);
+    writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x01);
     wait_us(10000);
 }
 
