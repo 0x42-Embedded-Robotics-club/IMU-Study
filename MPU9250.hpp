@@ -140,6 +140,10 @@
 
 #define PI 3.14159265358979323846f
 
+#define X 0
+#define Y 1
+#define Z 2
+
 // Using the MSENSR-9250 breakout board, ADO is set to 0 
 // Seven-bit device address is 110100 for ADO = 0 and 110101 for ADO = 1
 // mbed uses the eight-bit device address, so shift seven-bit addresses left by one!
@@ -173,7 +177,6 @@ enum MagneticScale {
 class MPU9250
 {
 public:
-    
     MPU9250(PinName sda, PinName scl, uint8_t aScale = AFS_2G, uint8_t gScale = GFS_250DPS, uint8_t mScale = MFS_16BITS);
     MPU9250(I2C *i2c);
     ~MPU9250();
@@ -186,24 +189,27 @@ public:
     void getGyroRes();
     void getMagRes();
 
-    void readAccelData(int16_t* destination);
-    void readGyroData(int16_t* destination);
-    void readMagData(int16_t* destination);
+    void readAccelData();
+    void readGyroData();
+    void readMagData();
     int16_t readTempData();
 
     void resetMPU9250();
-    void initAK8963(float* destination);
+    void initAK8963();
     void initMPU9250();
-    void calibrateMPU9250(float * dest1, float * dest2);
-    void MPU9250SelfTest(float * destination);
+    void calibrateMPU9250();
+    void MPU9250SelfTest();
 
     void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
     void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
 
 public:
     float selfTest[6];
-    float gyroBias[3],accelBias[3]; // Bias corrections for gyro and accelerometer
-    float magCalibration[3], magbias[3];  // Factory mag calibration and mag bias
+
+    float calibrateGyro[3];
+    float calibrateAccel[3];
+    float magCalibration[3];
+    float magbias[3];
     
     uint8_t aScale;               // AFS_2G, AFS_4G, AFS_8G, AFS_16G
     uint8_t gScale;               // GFS_250DPS, GFS_500DPS, GFS_1000DPS, GFS_2000DPS
@@ -215,8 +221,15 @@ public:
     int16_t gyroCount[3];   // Stores the 16-bit signed gyro sensor output
     int16_t magCount[3];    // Stores the 16-bit signed magnetometer sensor output
     float q[4];           // vector to hold quaternion
-    
-    float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values 
+
+    int16_t rawAccelData[3];
+    int16_t rawGyroData[3];
+    int16_t rawMagData[3];
+
+    float accel[3];
+    float gyro[3];
+    float mag[3];
+
     float pitch, yaw, roll;
     float deltat;                             // integration interval for both filter schemes
     int lastUpdate, firstUpdate, Now;    // used to calculate integration interval                               
@@ -226,7 +239,7 @@ public:
     float temperature;
 
 private:
-    I2C* i2c; 
+    I2C* i2c;
 };
 
 #endif

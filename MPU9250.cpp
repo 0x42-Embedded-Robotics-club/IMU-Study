@@ -113,38 +113,50 @@ void MPU9250::getMagRes()
 }
 
 
-void MPU9250::readAccelData(int16_t * destination)
+void MPU9250::readAccelData()
 {
     uint8_t rawData[6];  // x/y/z accel register data stored here
     readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers into data array
-    destination[0] = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);  // Turn the MSB and LSB into a signed 16-bit value
-    destination[1] = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);  
-    destination[2] = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]); 
+    rawAccelData[X] = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);  // Turn the MSB and LSB into a signed 16-bit value
+    rawAccelData[Y] = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);  
+    rawAccelData[Z] = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]); 
+
+    accel[X] = (float)rawAccelData[0] * aRes - calibrateAccel[0];
+    accel[Y] = (float)rawAccelData[1] * aRes - calibrateAccel[1];
+    accel[Z] = (float)rawAccelData[2] * aRes - calibrateAccel[2];
 }
 
-void MPU9250::readGyroData(int16_t * destination)
+void MPU9250::readGyroData()
 {
     uint8_t rawData[6];  // x/y/z gyro register data stored here
     readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers sequentially into data array
-    destination[0] = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);  // Turn the MSB and LSB into a signed 16-bit value
-    destination[1] = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);  
-    destination[2] = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]); 
+    rawGyroData[X] = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);  // Turn the MSB and LSB into a signed 16-bit value
+    rawGyroData[Y] = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);  
+    rawGyroData[Z] = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]); 
+
+    gyro[X] = (float)rawGyroData[0] * gRes - calibrateGyro[0];
+    gyro[Y] = (float)rawGyroData[1] * gRes - calibrateGyro[1];
+    gyro[Z] = (float)rawGyroData[2] * gRes - calibrateGyro[2];
 }
 
-void MPU9250::readMagData(int16_t * destination)
+void MPU9250::readMagData()
 {
     writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x01);
 
     uint8_t rawData[7];  // x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
-    if(readByte(AK8963_ADDRESS, AK8963_ST1) & 0x01) 
+    if(readByte(AK8963_ADDRESS, AK8963_ST1) & 0x01)
     { // wait for magnetometer data ready bit to be set
         readBytes(AK8963_ADDRESS, AK8963_XOUT_L, 7, rawData);  // Read the six raw data and ST2 registers sequentially into data array
         uint8_t c = rawData[6]; // End data read by reading ST2 register
         if(!(c & 0x08))
         { // Check if magnetic sensor overflow set, if not then report data
-            destination[0] = (int16_t)(((int16_t)rawData[1] << 8) | rawData[0]);  // Turn the MSB and LSB into a signed 16-bit value
-            destination[1] = (int16_t)(((int16_t)rawData[3] << 8) | rawData[2]);  // Data stored as little Endian
-            destination[2] = (int16_t)(((int16_t)rawData[5] << 8) | rawData[4]); 
+            rawMagData[X] = (int16_t)(((int16_t)rawData[1] << 8) | rawData[0]);  // Turn the MSB and LSB into a signed 16-bit value
+            rawMagData[Y] = (int16_t)(((int16_t)rawData[3] << 8) | rawData[2]);  // Data stored as little Endian
+            rawMagData[Z] = (int16_t)(((int16_t)rawData[5] << 8) | rawData[4]); 
+
+            mag[X] = (float)rawMagData[X] * mRes * magCalibration[0];
+            mag[Y] = (float)rawMagData[Y] * mRes * magCalibration[1];
+            mag[Z] = (float)rawMagData[Z] * mRes * magCalibration[2];
         }
     }
 }
@@ -164,7 +176,7 @@ void MPU9250::resetMPU9250()
     wait_us(100000);
 }
   
-void MPU9250::initAK8963(float* destination)
+void MPU9250::initAK8963()
 {
     // First extract the factory calibration for each magnetometer axis
     writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00);
@@ -173,9 +185,9 @@ void MPU9250::initAK8963(float* destination)
     wait_us(10000);
     uint8_t rawData[3];  // x/y/z gyro calibration data stored here
     readBytes(AK8963_ADDRESS, AK8963_ASAX, 3, &rawData[0]);  // Read the x-, y-, and z-axis calibration values
-    destination[0] =  (float)(rawData[0] - 128)/256.0f + 1.0f;   // Return x-axis sensitivity adjustment values, etc.
-    destination[1] =  (float)(rawData[1] - 128)/256.0f + 1.0f;  
-    destination[2] =  (float)(rawData[2] - 128)/256.0f + 1.0f; 
+    magCalibration[0] =  (float)(rawData[0] - 128)/256.0f + 1.0f;   // Return x-axis sensitivity adjustment values, etc.
+    magCalibration[1] =  (float)(rawData[1] - 128)/256.0f + 1.0f;  
+    magCalibration[2] =  (float)(rawData[2] - 128)/256.0f + 1.0f; 
     writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00); // Power down magnetometer  
     wait_us(10000);
     // Configure the magnetometer for continuous read and highest resolution
@@ -238,8 +250,8 @@ void MPU9250::initMPU9250()
 
 // Function which accumulates gyro and accelerometer data after device initialization. It calculates the average
 // of the at-rest readings and then loads the resulting offsets into accelerometer and gyro bias registers.
-void MPU9250::calibrateMPU9250(float* dest1, float* dest2)
-{  
+void MPU9250::calibrateMPU9250()
+{
     uint8_t data[12]; // data array to hold accelerometer and gyro x, y, z, data
     uint16_t ii, packet_count, fifo_count;
     int32_t gyro_bias[3] = {0, 0, 0}, accel_bias[3] = {0, 0, 0};
@@ -328,9 +340,9 @@ void MPU9250::calibrateMPU9250(float* dest1, float* dest2)
     writeByte(MPU9250_ADDRESS, ZG_OFFSET_H, data[4]);
     writeByte(MPU9250_ADDRESS, ZG_OFFSET_L, data[5]);
     */
-    dest1[0] = (float)gyro_bias[0] / (float)gyrosensitivity; // construct gyro bias in deg/s for later manual subtraction
-    dest1[1] = (float)gyro_bias[1] / (float)gyrosensitivity;
-    dest1[2] = (float)gyro_bias[2] / (float)gyrosensitivity;
+    calibrateGyro[0] = (float)gyro_bias[0] / (float)gyrosensitivity; // construct gyro bias in deg/s for later manual subtraction
+    calibrateGyro[1] = (float)gyro_bias[1] / (float)gyrosensitivity;
+    calibrateGyro[2] = (float)gyro_bias[2] / (float)gyrosensitivity;
 
     // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
     // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
@@ -380,13 +392,13 @@ void MPU9250::calibrateMPU9250(float* dest1, float* dest2)
     writeByte(MPU9250_ADDRESS, ZA_OFFSET_L, data[5]);
     */
     // Output scaled accelerometer biases for manual subtraction in the main program
-    dest2[0] = (float)accel_bias[0] / (float)accelsensitivity; 
-    dest2[1] = (float)accel_bias[1] / (float)accelsensitivity;
-    dest2[2] = (float)accel_bias[2] / (float)accelsensitivity;
+    calibrateAccel[0] = (float)accel_bias[0] / (float)accelsensitivity; 
+    calibrateAccel[1] = (float)accel_bias[1] / (float)accelsensitivity;
+    calibrateAccel[2] = (float)accel_bias[2] / (float)accelsensitivity;
 }
 
 // Accelerometer and gyroscope self test; check calibration wrt factory settings
-void MPU9250::MPU9250SelfTest(float* destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
+void MPU9250::MPU9250SelfTest() // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
 {
     uint8_t rawData[6] = {0, 0, 0, 0, 0, 0};
     uint8_t selfTest[6];
@@ -468,8 +480,8 @@ void MPU9250::MPU9250SelfTest(float* destination) // Should return percent devia
     // To get percent, must multiply by 100
     for (int i = 0; i < 3; i++)
     {
-        destination[i] = 100.0*((float)(aSTAvg[i] - aAvg[i]))/factoryTrim[i]; // Report percent differences
-        destination[i+3] = 100.0*((float)(gSTAvg[i] - gAvg[i]))/factoryTrim[i+3]; // Report percent differences
+        this->selfTest[i] = 100.0*((float)(aSTAvg[i] - aAvg[i]))/factoryTrim[i]; // Report percent differences
+        this->selfTest[i+3] = 100.0*((float)(gSTAvg[i] - gAvg[i]))/factoryTrim[i+3]; // Report percent differences
     }
 }
 
