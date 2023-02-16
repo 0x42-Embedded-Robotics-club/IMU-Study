@@ -1,7 +1,10 @@
+#include "BufferedSerial.h"
 #include "PinNameAliases.h"
 #include "PinNames.h"
 #include "mbed.h"
 #include <cmath>
+#include <cstdio>
+#include <string>
 
 #include "MPU9250.hpp"
 
@@ -43,6 +46,16 @@ int main()
 	printf("MPU9250 > Gyroscope sensitivity is %f LSB/deg/s \n", 1.0f / mpu9250.gRes);
 	printf("MPU9250 > Magnetometer sensitivity is %f LSB/G \n", 1.0f / mpu9250.mRes);
 
+    BufferedSerial pc(USBTX, USBRX);
+    pc.set_baud(115200);
+    pc.set_format(
+        /* bits */ 8,
+        /* parity */ BufferedSerial::None,
+        /* stop bit */ 1
+    );
+
+    std::string cummBuf;
+
     while (1)
     {
         mpu9250.readAccelData(accelData);
@@ -61,9 +74,18 @@ int main()
         float my = (float)magData[1] * mpu9250.mRes * mpu9250.magCalibration[1];
         float mz = (float)magData[2] * mpu9250.mRes * mpu9250.magCalibration[2];
 
-        printf("accel(g/s): %f, %f, %f (length: %f)\n", ax, ay, az, sqrtf(pow(ax, 2) + pow(ay, 2) + pow(az, 2)));
-        printf("gyro(Degree/second): %f, %f, %f\n", gx, gy, gz);
-        printf("mag(milligauss): %d, %d, %d\n\n", magData[0], magData[1], magData[2]);
+        // printf("accel(g/s): %f, %f, %f (length: %f)\n", ax, ay, az, sqrtf(pow(ax, 2) + pow(ay, 2) + pow(az, 2)));
+        // printf("gyro(Degree/second): %f, %f, %f\n", gx, gy, gz);
+        // printf("mag(milligauss): %d, %d, %d\n\n", magData[0], magData[1], magData[2]);
+
+        cummBuf = 
+            to_string(ax) + "," + to_string(ay) + "," + to_string(az) + "," + 
+            to_string(gx) + "," + to_string(gy) + "," + to_string(gz) + "," + 
+            to_string(mx) + "," + to_string(my) + "," + to_string(mz) + "," + 
+            to_string(0) + "," + to_string(0) + "," + to_string(0);
+
+        printf("%s\n", cummBuf.c_str());
+
         wait_us(1000);
     }
 }
