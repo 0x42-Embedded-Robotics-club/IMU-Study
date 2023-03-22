@@ -200,6 +200,22 @@ public:
     void calibrateMPU9250();
     void MPU9250SelfTest();
 
+    // Testing...
+    float GyroMeasError = PI * (60.0f / 180.0f);
+    float beta = sqrt(3.0f / 4.0f) * GyroMeasError;  // compute beta
+    float GyroMeasDrift = PI * (1.0f / 180.0f);      // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
+    float zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;  // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
+    // 쿼터니언 w, x, y, z를 이용하여 yaw, pitch, roll을 계산하는 함수
+    void quaternionToEuler() {
+        yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);   
+        pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
+        roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+        pitch *= 180.0f / PI;
+        yaw   *= 180.0f / PI; 
+        yaw   -= 13.8f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
+        roll  *= 180.0f / PI;
+    }
+
     void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
     void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
 
@@ -208,7 +224,7 @@ public:
 
     float calibrateGyro[3];
     float calibrateAccel[3];
-    float magCalibration[3];
+    float calibrationMag[3];
     float magbias[3];
     
     uint8_t aScale;               // AFS_2G, AFS_4G, AFS_8G, AFS_16G
@@ -220,7 +236,7 @@ public:
     int16_t accelCount[3];  // Stores the 16-bit signed accelerometer sensor output
     int16_t gyroCount[3];   // Stores the 16-bit signed gyro sensor output
     int16_t magCount[3];    // Stores the 16-bit signed magnetometer sensor output
-    float q[4];           // vector to hold quaternion
+    float q[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // vector to hold quaternion
 
     int16_t rawAccelData[3];
     int16_t rawGyroData[3];

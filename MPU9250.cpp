@@ -1,5 +1,6 @@
 #include "MPU9250.hpp"
 #include <cstdint>
+#include <cstdio>
 
 #define Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
 #define Ki 0.0f
@@ -154,9 +155,9 @@ void MPU9250::readMagData()
             rawMagData[Y] = (int16_t)(((int16_t)rawData[3] << 8) | rawData[2]);  // Data stored as little Endian
             rawMagData[Z] = (int16_t)(((int16_t)rawData[5] << 8) | rawData[4]); 
 
-            mag[X] = (float)rawMagData[X] * mRes * magCalibration[0];
-            mag[Y] = (float)rawMagData[Y] * mRes * magCalibration[1];
-            mag[Z] = (float)rawMagData[Z] * mRes * magCalibration[2];
+            mag[X] = (float)rawMagData[X] * mRes * calibrationMag[0];
+            mag[Y] = (float)rawMagData[Y] * mRes * calibrationMag[1];
+            mag[Z] = (float)rawMagData[Z] * mRes * calibrationMag[2];
         }
     }
 }
@@ -185,9 +186,9 @@ void MPU9250::initAK8963()
     wait_us(10000);
     uint8_t rawData[3];  // x/y/z gyro calibration data stored here
     readBytes(AK8963_ADDRESS, AK8963_ASAX, 3, &rawData[0]);  // Read the x-, y-, and z-axis calibration values
-    magCalibration[0] =  (float)(rawData[0] - 128)/256.0f + 1.0f;   // Return x-axis sensitivity adjustment values, etc.
-    magCalibration[1] =  (float)(rawData[1] - 128)/256.0f + 1.0f;  
-    magCalibration[2] =  (float)(rawData[2] - 128)/256.0f + 1.0f; 
+    calibrationMag[0] =  (float)(rawData[0] - 128)/256.0f + 1.0f;   // Return x-axis sensitivity adjustment values, etc.
+    calibrationMag[1] =  (float)(rawData[1] - 128)/256.0f + 1.0f;  
+    calibrationMag[2] =  (float)(rawData[2] - 128)/256.0f + 1.0f; 
     writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00); // Power down magnetometer  
     wait_us(10000);
     // Configure the magnetometer for continuous read and highest resolution
@@ -494,14 +495,6 @@ void MPU9250::MPU9250SelfTest() // Should return percent deviation from factory 
 // but is much less computationally intensive---it can be performed on a 3.3 V Pro Mini operating at 8 MHz!
 void MPU9250::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
-    float GyroMeasError = PI * (60.0f / 180.0f);     // gyroscope measurement error in rads/s (start at 60 deg/s), then reduce after ~10 s to 3
-    float beta = sqrt(3.0f / 4.0f) * GyroMeasError;  // compute beta
-    float GyroMeasDrift = PI * (1.0f / 180.0f);      // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
-    float zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;  // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
-    q[0] = 1.0f;
-    q[1] = 0.0f;
-    q[2] = 0.0f;
-    q[3] = 0.0f;
     float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
     float norm;
     float hx, hy, _2bx, _2bz;
@@ -534,7 +527,8 @@ void MPU9250::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 
     // Normalise accelerometer measurement
     norm = sqrt(ax * ax + ay * ay + az * az);
-    if (norm == 0.0f) return; // handle NaN
+    if (norm == 0.0f)
+        return; // handle NaN
     norm = 1.0f/norm;
     ax *= norm;
     ay *= norm;
@@ -542,7 +536,8 @@ void MPU9250::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 
     // Normalise magnetometer measurement
     norm = sqrt(mx * mx + my * my + mz * mz);
-    if (norm == 0.0f) return; // handle NaN
+    if (norm == 0.0f)
+        return; // handle NaN
     norm = 1.0f/norm;
     mx *= norm;
     my *= norm;
@@ -584,12 +579,11 @@ void MPU9250::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
     q3 += qDot3 * deltat;
     q4 += qDot4 * deltat;
     norm = sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
-    norm = 1.0f/norm;
+    norm = 1.0f / norm;
     q[0] = q1 * norm;
     q[1] = q2 * norm;
     q[2] = q3 * norm;
     q[3] = q4 * norm;
-
 }
 
 // Similar to Madgwick scheme but uses proportional and integral filtering on the error between estimated reference vectors and

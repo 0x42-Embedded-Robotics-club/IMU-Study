@@ -42,10 +42,13 @@ int main()
     printf("MPU9250 > Accelerometer sensitivity is %f LSB/g \n", 1.0f / mpu9250.aRes);
 	printf("MPU9250 > Gyroscope sensitivity is %f LSB/deg/s \n", 1.0f / mpu9250.gRes);
 	printf("MPU9250 > Magnetometer sensitivity is %f LSB/G \n", 1.0f / mpu9250.mRes);
+    mpu9250.magbias[0] = +470.;
+    mpu9250.magbias[1] = +120.;
+    mpu9250.magbias[2] = +125.;
 
     BufferedSerial pc(USBTX, USBRX);
-    // pc.set_baud(115200);
-    pc.set_baud(9600);
+    pc.set_baud(115200);
+    // pc.set_baud(9600);
     pc.set_format(
         /* bits */ 8,
         /* parity */ BufferedSerial::None,
@@ -53,6 +56,8 @@ int main()
     );
 
     std::string cummBuf;
+    // mpu9250.from_euler_angles(0.0f, 0.0f, 0.0f);
+    // printf("%f, %f, %f, %f\n", mpu9250.q[0], mpu9250.q[1], mpu9250.q[2], mpu9250.q[3]);
 
     while (1)
     {
@@ -60,18 +65,22 @@ int main()
         mpu9250.readGyroData();
         mpu9250.readMagData();
 
-        // printf("accel(g/s): %f, %f, %f (length: %f)\n\n", mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], sqrtf(pow(mpu9250.accel[X], 2) + pow(mpu9250.accel[Y], 2) + pow(mpu9250.accel[Z], 2)));
-        // printf("gyro(Degree/second): %f, %f, %f\n\n", mpu9250.gyro[X], mpu9250.gyro[Y], mpu9250.gyro[Z]);
-        // printf("mag(milligauss): %f, %f, %f\n\n", mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
-
         cummBuf = 
-            to_string(mpu9250.accel[X]) + "," + to_string(mpu9250.accel[Y]) + "," + to_string(mpu9250.accel[Z]) + "," + 
+            to_string(mpu9250.accel[X]) + "," + to_string(mpu9250.accel[Y]) + "," + to_string(mpu9250.accel[Z]) + "," +
             to_string(mpu9250.gyro[X]) + "," + to_string(mpu9250.gyro[Y]) + "," + to_string(mpu9250.gyro[Z]) + "," + 
-            to_string(mpu9250.mag[X]) + "," + to_string(mpu9250.mag[Y]) + "," + to_string(mpu9250.mag[Z]) + "," + 
-            to_string(0) + "," + to_string(0) + "," + to_string(0);
+            to_string(mpu9250.mag[X]) + "," + to_string(mpu9250.mag[Y]) + "," + to_string(mpu9250.mag[Z]);
 
         printf("%s\n", cummBuf.c_str());
 
-        wait_us(1000);
+        // Testing...
+        // printf("%f, %f, %f\n", mpu9250.gyro[X], mpu9250.gyro[Y], mpu9250.gyro[Z]);
+
+        // mpu9250.MadgwickQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
+        // // mpu9250.MahonyQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
+        // mpu9250.quaternionToEuler();
+        // printf("%f, %f, %f, %f\n", mpu9250.q[0], mpu9250.q[1], mpu9250.q[2], mpu9250.q[3]);
+        // printf("%f, %f, %f\n", mpu9250.pitch, mpu9250.roll, mpu9250.yaw);
+
+        wait_us(20000);
     }
 }
