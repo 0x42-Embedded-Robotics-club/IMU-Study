@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstdio>
 #include <string>
-
 #include "MPU9250.hpp"
 
 int main()
@@ -56,8 +55,9 @@ int main()
     );
 
     std::string cummBuf;
-    // mpu9250.from_euler_angles(0.0f, 0.0f, 0.0f);
-    // printf("%f, %f, %f, %f\n", mpu9250.q[0], mpu9250.q[1], mpu9250.q[2], mpu9250.q[3]);
+
+    Timer t;
+    t.start();
 
     while (1)
     {
@@ -65,22 +65,47 @@ int main()
         mpu9250.readGyroData();
         mpu9250.readMagData();
 
-        cummBuf = 
-            to_string(mpu9250.accel[X]) + "," + to_string(mpu9250.accel[Y]) + "," + to_string(mpu9250.accel[Z]) + "," +
-            to_string(mpu9250.gyro[X]) + "," + to_string(mpu9250.gyro[Y]) + "," + to_string(mpu9250.gyro[Z]) + "," + 
-            to_string(mpu9250.mag[X]) + "," + to_string(mpu9250.mag[Y]) + "," + to_string(mpu9250.mag[Z]);
+        // cummBuf = 
+        //     to_string(mpu9250.accel[X]) + "," + to_string(mpu9250.accel[Y]) + "," + to_string(mpu9250.accel[Z]) + "," +
+        //     to_string(mpu9250.gyro[X]) + "," + to_string(mpu9250.gyro[Y]) + "," + to_string(mpu9250.gyro[Z]) + "," + 
+        //     to_string(mpu9250.mag[X]) + "," + to_string(mpu9250.mag[Y]) + "," + to_string(mpu9250.mag[Z]);
 
-        printf("%s\n", cummBuf.c_str());
+        // printf("%s\n", cummBuf.c_str());
 
-        // Testing...
-        // printf("%f, %f, %f\n", mpu9250.gyro[X], mpu9250.gyro[Y], mpu9250.gyro[Z]);
+        mpu9250.Now = t.elapsed_time().count();
+        mpu9250.deltat = (float)((mpu9250.Now - mpu9250.lastUpdate)/1000000.0f);
+        mpu9250.lastUpdate = mpu9250.Now;
 
-        // mpu9250.MadgwickQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
-        // // mpu9250.MahonyQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
-        // mpu9250.quaternionToEuler();
-        // printf("%f, %f, %f, %f\n", mpu9250.q[0], mpu9250.q[1], mpu9250.q[2], mpu9250.q[3]);
-        // printf("%f, %f, %f\n", mpu9250.pitch, mpu9250.roll, mpu9250.yaw);
+        mpu9250.MadgwickQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
+        // mpu9250.MahonyQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
+        mpu9250.quaternionToEuler();
+        // printf("%f, %f, %f, 180, -180\n", mpu9250.pitch, mpu9250.roll, mpu9250.yaw);
+
+        /* 
+        * Test 
+        */
+        float gravityVector[3];
+        float pry[3];
+        // Get gravity
+        gravityVector[0] = 2 * (mpu9250.q[1]*mpu9250.q[3] - mpu9250.q[0]*mpu9250.q[2]);
+        gravityVector[1] = 2 * (mpu9250.q[0]*mpu9250.q[1] + mpu9250.q[2]*mpu9250.q[3]);
+        gravityVector[2] = mpu9250.q[0]*mpu9250.q[0] - mpu9250.q[1]*mpu9250.q[1] - mpu9250.q[2]*mpu9250.q[2] + mpu9250.q[3]*mpu9250.q[3];
+        // Get pitch roll yaw
+        // yaw: (about Z axis)
+        pry[2] = atan2(2*mpu9250.q[1]*mpu9250.q[2] - 2*mpu9250.q[0]*mpu9250.q[3], 2*mpu9250.q[0]*mpu9250.q[0] + 2*mpu9250.q[1]*mpu9250.q[1] - 1);
+        // pitch: (nose up/down, about Y axis)
+        pry[0] = atan(gravityVector[0] / sqrt(gravityVector[1]*gravityVector[1] + gravityVector[2]*gravityVector[2]));
+        // roll: (tilt left/right, about X axis)
+        pry[1] = atan(gravityVector[1] / sqrt(gravityVector[0]*gravityVector[0] + gravityVector[2]*gravityVector[2]));
+        printf("%f, %f, %f, 180, -180\n", pry[0] * 180/PI, pry[1] * 180/PI, pry[2] * 180/PI);
+        /*
+        * Test code end
+        */
 
         wait_us(20000);
     }
+
+    t.stop();
+
+    return 0;
 }

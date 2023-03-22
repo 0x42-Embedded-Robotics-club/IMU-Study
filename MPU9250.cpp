@@ -110,6 +110,9 @@ void MPU9250::getMagRes()
         case MFS_16BITS:
             mRes = 10.0 * 4219.0 / 32760.0; // Proper scale to return milliGauss
             break;
+        case MFS_ARDUINO:
+            mRes = 1200.0 / 4096.0;
+            break;
     }
 }
 
@@ -527,8 +530,7 @@ void MPU9250::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 
     // Normalise accelerometer measurement
     norm = sqrt(ax * ax + ay * ay + az * az);
-    if (norm == 0.0f)
-        return; // handle NaN
+    if (norm == 0.0f) { return; } // handle NaN
     norm = 1.0f/norm;
     ax *= norm;
     ay *= norm;
@@ -536,8 +538,7 @@ void MPU9250::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 
     // Normalise magnetometer measurement
     norm = sqrt(mx * mx + my * my + mz * mz);
-    if (norm == 0.0f)
-        return; // handle NaN
+    if (norm == 0.0f) { return; } // handle NaN
     norm = 1.0f/norm;
     mx *= norm;
     my *= norm;
@@ -616,7 +617,7 @@ void MPU9250::MahonyQuaternionUpdate(float ax, float ay, float az, float gx, flo
 
     // Normalise accelerometer measurement
     norm = sqrt(ax * ax + ay * ay + az * az);
-    if (norm == 0.0f) return; // handle NaN
+    if (norm == 0.0f) { return; } // handle NaN
     norm = 1.0f / norm;        // use reciprocal for division
     ax *= norm;
     ay *= norm;
@@ -624,7 +625,7 @@ void MPU9250::MahonyQuaternionUpdate(float ax, float ay, float az, float gx, flo
 
     // Normalise magnetometer measurement
     norm = sqrt(mx * mx + my * my + mz * mz);
-    if (norm == 0.0f) return; // handle NaN
+    if (norm == 0.0f) { return; } // handle NaN
     norm = 1.0f / norm;        // use reciprocal for division
     mx *= norm;
     my *= norm;

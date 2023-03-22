@@ -171,7 +171,8 @@ enum GyroScale {
 
 enum MagneticScale {
   MFS_14BITS = 0, // 0.6 mG per LSB
-  MFS_16BITS      // 0.15 mG per LSB
+  MFS_16BITS,     // 0.15 mG per LSB
+  MFS_ARDUINO
 };
 
 class MPU9250
@@ -212,7 +213,8 @@ public:
         roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
         pitch *= 180.0f / PI;
         yaw   *= 180.0f / PI; 
-        yaw   -= 13.8f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
+        // yaw   -= 13.8f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
+        yaw   -= 40.0f; // Declination at Seoul, Korea, 41 degrees 59 minutes 72 seconds on 2023-3-23
         roll  *= 180.0f / PI;
     }
 
@@ -247,7 +249,7 @@ public:
     float mag[3];
 
     float pitch, yaw, roll;
-    float deltat;                             // integration interval for both filter schemes
+    float deltat = 0.0f;                             // integration interval for both filter schemes
     int lastUpdate, firstUpdate, Now;    // used to calculate integration interval                               
     int delt_t; // used to control display output rate
     int count;  // used to control display output rate
