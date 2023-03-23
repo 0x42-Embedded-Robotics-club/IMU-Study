@@ -212,10 +212,15 @@ public:
         pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
         roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
         pitch *= 180.0f / PI;
-        yaw   *= 180.0f / PI; 
-        // yaw   -= 13.8f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
-        yaw   -= 40.0f; // Declination at Seoul, Korea, 41 degrees 59 minutes 72 seconds on 2023-3-23
+        yaw   *= 180.0f / PI;
+        yaw   -= 54.0f; // Declination: 00 54 48.83, 2023-3-23
         roll  *= 180.0f / PI;
+
+        // Get gravity
+        float gravityVector[3];
+        gravityVector[0] = 2 * (q[1]*q[3] - q[0]*q[2]);
+        gravityVector[1] = 2 * (q[0]*q[1] + q[2]*q[3]);
+        gravityVector[2] = q[0]*q[0] - q[1]*q[1] - q[2]*q[2] + q[3]*q[3];
     }
 
     void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);

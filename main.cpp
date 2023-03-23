@@ -77,35 +77,13 @@ int main()
         mpu9250.lastUpdate = mpu9250.Now;
 
         mpu9250.MadgwickQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
-        // mpu9250.MahonyQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
         mpu9250.quaternionToEuler();
-        // printf("%f, %f, %f, 180, -180\n", mpu9250.pitch, mpu9250.roll, mpu9250.yaw);
-
-        /* 
-        * Test 
-        */
-        float gravityVector[3];
-        float pry[3];
-        // Get gravity
-        gravityVector[0] = 2 * (mpu9250.q[1]*mpu9250.q[3] - mpu9250.q[0]*mpu9250.q[2]);
-        gravityVector[1] = 2 * (mpu9250.q[0]*mpu9250.q[1] + mpu9250.q[2]*mpu9250.q[3]);
-        gravityVector[2] = mpu9250.q[0]*mpu9250.q[0] - mpu9250.q[1]*mpu9250.q[1] - mpu9250.q[2]*mpu9250.q[2] + mpu9250.q[3]*mpu9250.q[3];
-        // Get pitch roll yaw
-        // yaw: (about Z axis)
-        pry[2] = atan2(2*mpu9250.q[1]*mpu9250.q[2] - 2*mpu9250.q[0]*mpu9250.q[3], 2*mpu9250.q[0]*mpu9250.q[0] + 2*mpu9250.q[1]*mpu9250.q[1] - 1);
-        // pitch: (nose up/down, about Y axis)
-        pry[0] = atan(gravityVector[0] / sqrt(gravityVector[1]*gravityVector[1] + gravityVector[2]*gravityVector[2]));
-        // roll: (tilt left/right, about X axis)
-        pry[1] = atan(gravityVector[1] / sqrt(gravityVector[0]*gravityVector[0] + gravityVector[2]*gravityVector[2]));
-        printf("%f, %f, %f, 180, -180\n", pry[0] * 180/PI, pry[1] * 180/PI, pry[2] * 180/PI);
-        /*
-        * Test code end
-        */
+        printf("%f, %f, %f, 180, -180\n", mpu9250.pitch, mpu9250.roll, mpu9250.yaw);
 
         wait_us(20000);
     }
 
-    t.stop();
+    // t.stop();
 
     return 0;
 }
