@@ -78,7 +78,7 @@ int main()
 
         mpu9250.MadgwickQuaternionUpdate(mpu9250.accel[X], mpu9250.accel[Y], mpu9250.accel[Z], mpu9250.gyro[X] * PI/180.0f, mpu9250.gyro[Y] * PI/180.0f, mpu9250.gyro[Z] * PI/180.0f, mpu9250.mag[X], mpu9250.mag[Y], mpu9250.mag[Z]);
         mpu9250.quaternionToEuler();
-        printf("%f, %f, %f, 180, -180\n", mpu9250.pitch, mpu9250.roll, mpu9250.yaw);
+        printf("%f, %f, %f\n", mpu9250.pitch, mpu9250.roll, mpu9250.yaw);
 
         wait_us(20000);
     }
