@@ -9,5 +9,5 @@ MPU9250에 매드윅 필터를 사용하여 IMU를 구현하였습니다.<br/>
 시연 영상: https://youtu.be/j-V_8WmK6q4
 
 ## Reference
->- Attitude indicator app (flutter)  
+>**[ Attitude indicator app (flutter) ]**  
 >: https://github.com/muingY/AttitudeIndicator  
